@@ -15,9 +15,15 @@ y_text.set("Y:           ")
 f_text = StringVar()
 Label(root, textvariable=f_text).pack()
 f_text.set("Fingers:     ")
-w=Label(root, text='X')
-w.pack()
-w.place(x=200, y=100)
+c_last_loc_x = 200
+c_last_loc_y = 100
+c_loc_x = 200
+c_loc_y = 100
+click = StringVar()
+cursor=Label(root, textvariable=click)
+click.set("X")
+cursor.pack()
+cursor.place(x=c_last_loc_x, y=c_last_loc_y)
 # command to get data from trackpad
 cmd = "evtest /dev/input/event9"
 
@@ -28,6 +34,7 @@ fingers = []
 origin_x = 0
 origin_y = 0
 is_touching_int = 0
+is_pressing_int = 0
 initial_x_is_get = 0
 initial_y_is_get = 0
 x_int = 0
@@ -61,21 +68,22 @@ while True:
                 fingers.append(2)
             #print("finger=" + f_count)
             #print(fingers)
-            if 4 in fingers:
-                #print("4 fingers")
-                finger_count = 4
-            elif 3 in fingers:
-                #print("3 fingers")
-                finger_count = 3
-            elif 2 in fingers:
-                #print("2 fingers")
-                finger_count = 2
-            else:
-                #print("1 fingers")
-                finger_count = 1
         else:
             if "EV_ABS" in outstr:
                 fingers.append(1)
+        if 4 in fingers:
+            #print("4 fingers")
+            finger_count = 4
+        elif 3 in fingers:
+            #print("3 fingers")
+            finger_count = 3
+        elif 2 in fingers:
+            #print("2 fingers")
+            finger_count = 2
+        else:
+            #print("1 fingers")
+            finger_count = 1
+        
         pos = -1
     
     merge = merge + "End"
@@ -120,6 +128,22 @@ while True:
     
         pos = -1
         
+        # Button detection
+        pos = merge.find("BTN_LEFT")
+        posx = merge.find("'", pos)
+        if pos != -1:
+            is_pressing = merge[pos+17:posx]
+            if is_pressing is "1":
+                #print("pressing")
+                is_pressing_int = 1
+                click.set("x")
+            elif is_pressing is "0":
+                #print("unpressed")
+                is_pressing_int = 0
+                click.set("X")
+    
+        pos = -1
+
         # Change in position detection
         
         if is_touching_int is 1:
@@ -134,14 +158,17 @@ while True:
             x_text.set("X: " + str(x_int - origin_x))
             y_text.set("Y: " + str(origin_y - y_int))
             f_text.set("Fingers: " + str(finger_count))
-            w.place(x=200 + x_int - origin_x, y=100 + y_int - origin_y)
+            c_loc_x = c_last_loc_x + x_int - origin_x
+            c_loc_y = c_last_loc_y + y_int - origin_y
+            cursor.place(x=c_loc_x, y=c_loc_y)
         elif is_touching_int is 0:
             origin_x = x_int
             initial_x_is_get = 0
             origin_y = y_int
             initial_y_is_get = 0
             fingers = []
-        
+            c_last_loc_x = c_loc_x
+            c_last_loc_y = c_loc_y
         
         
     #print(merge)
