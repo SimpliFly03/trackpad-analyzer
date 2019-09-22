@@ -1,8 +1,26 @@
 import subprocess, sys
 import time
+from tkinter import *
+
+# gui
+root=Tk()
+root.minsize(400, 200)
+root.title('Touchpad ')
+x_text = StringVar()
+Label(root, textvariable=x_text).pack()
+x_text.set("X:           ")
+y_text = StringVar()
+Label(root, textvariable=y_text).pack()
+y_text.set("Y:           ")
+f_text = StringVar()
+Label(root, textvariable=f_text).pack()
+f_text.set("Fingers:     ")
+w=Label(root, text='X')
+w.pack()
+w.place(x=200, y=100)
 # command to get data from trackpad
 cmd = "evtest /dev/input/event9"
- 
+
 # run it
 p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
 # some predefined variables
@@ -94,10 +112,10 @@ while True:
         if pos != -1:
             is_touching = merge[pos+18:posx]
             if is_touching is "1":
-                print("touching")
+                #print("touching")
                 is_touching_int = 1
             elif is_touching is "0":
-                print("released")
+                #print("released")
                 is_touching_int = 0
     
         pos = -1
@@ -112,7 +130,11 @@ while True:
                 if y_axis != '':
                     origin_y = y_int
                     initial_y_is_get = 1
-            print(x_int - origin_x, " , ", y_int - origin_y, " , ", finger_count, fingers)
+            #print(x_int - origin_x, " , ", y_int - origin_y, " , ", finger_count, fingers)
+            x_text.set("X: " + str(x_int - origin_x))
+            y_text.set("Y: " + str(origin_y - y_int))
+            f_text.set("Fingers: " + str(finger_count))
+            w.place(x=200 + x_int - origin_x, y=100 + y_int - origin_y)
         elif is_touching_int is 0:
             origin_x = x_int
             initial_x_is_get = 0
@@ -124,5 +146,4 @@ while True:
         
     #print(merge)
     merge = "Start"
-    
-            
+    root.update()            
