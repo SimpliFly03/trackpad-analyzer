@@ -7,10 +7,14 @@ cmd = "evtest /dev/input/event9"
 p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
 # some predefined variables
 fingers = []
-test = 0
-touchx = 0
-testis = 0
+origin_x = 0
+origin_y = 0
+is_touching_int = 0
+initial_x_is_get = 0
+initial_y_is_get = 0
 x_int = 0
+y_int = 0
+finger_count = 1
 merge = "Start"
 
 while True:
@@ -22,6 +26,40 @@ while True:
         out = p.stdout.readline().rstrip()
         outstr = str(out)
         merge = merge + outstr
+        
+        # finger count
+        if len(fingers) > 40:
+            fingers[:1] = []
+        
+        pos = outstr.find("ABS_MT_SLOT")
+        posx = outstr.find("'", pos)
+        if pos != -1:
+            f_count = outstr[pos+20:posx]
+            if f_count == "3":
+                fingers.append(4)
+            elif f_count == "2":
+                fingers.append(3)
+            elif f_count == "1":
+                fingers.append(2)
+            #print("finger=" + f_count)
+            #print(fingers)
+            if 4 in fingers:
+                #print("4 fingers")
+                finger_count = 4
+            elif 3 in fingers:
+                #print("3 fingers")
+                finger_count = 3
+            elif 2 in fingers:
+                #print("2 fingers")
+                finger_count = 2
+            else:
+                #print("1 fingers")
+                finger_count = 1
+        else:
+            if "EV_ABS" in outstr:
+                fingers.append(1)
+        pos = -1
+    
     merge = merge + "End"
     
     # getting values from merge string
@@ -42,33 +80,13 @@ while True:
         posx = merge.find("'", pos)
         if pos != -1:
             y_axis = merge[pos+14:posx]
+            if y_axis != '':
+                y_int = int(y_axis)
             #print("y=" + y_axis)
     
         pos = -1
 
-        # finger count
-        if len(fingers) > 4:
-            fingers[:1] = []
         
-        pos = merge.find("ABS_MT_SLOT")
-        posx = merge.find("'", pos)
-        if pos != -1:
-            f_count = merge[pos+20:posx]
-            if f_count == "3":
-                fingers.append(4)
-            elif f_count == "2":
-                fingers.append(3)
-            elif f_count == "1":
-                fingers.append(2)
-            #print("finger=" + f_count)
-            #print(fingers)
-            if 4 in fingers:
-                print("4 fingers")
-            elif 3 in fingers:
-                print("3 fingers")
-            elif 2 in fingers:
-                print("2 fingers")
-        pos = -1
 
         # Touch detection
         pos = merge.find("BTN_TOUCH")
@@ -77,24 +95,32 @@ while True:
             is_touching = merge[pos+18:posx]
             if is_touching is "1":
                 print("touching")
-                touchx = 1
+                is_touching_int = 1
             elif is_touching is "0":
                 print("released")
-                touchx = 0
+                is_touching_int = 0
     
         pos = -1
         
         # Change in position detection
-        if touchx is 1:
-            if testis == 0:
+        
+        if is_touching_int is 1:
+            if initial_x_is_get == 0:
                 if x_axis != '':
-                    test = x_int
-                    testis = 1
-            print(x_int - test)
-        elif touchx is 0:
-            test = x_int
-            testis = 0
-            #print(test)
+                    origin_x = x_int
+                    initial_x_is_get = 1
+                if y_axis != '':
+                    origin_y = y_int
+                    initial_y_is_get = 1
+            print(x_int - origin_x, " , ", y_int - origin_y, " , ", finger_count, fingers)
+        elif is_touching_int is 0:
+            origin_x = x_int
+            initial_x_is_get = 0
+            origin_y = y_int
+            initial_y_is_get = 0
+            fingers = []
+        
+        
         
     #print(merge)
     merge = "Start"
