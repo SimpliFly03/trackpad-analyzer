@@ -1,17 +1,18 @@
 import subprocess, sys
 import time
-## command to run - tcp only ##
+# command to get data from trackpad
 cmd = "evtest /dev/input/event9"
  
-## run it ##
+# run it
 p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
+# some predefined variables
 fingers = []
 test = 0
 touchx = 0
 testis = 0
 x_int = 0
 merge = "Start"
-## But do not wait till netstat finish, start displaying output immediately ##
+
 while True:
     out = p.stdout.readline().rstrip()
     outstr = str(out)
