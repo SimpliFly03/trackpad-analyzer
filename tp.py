@@ -1,11 +1,33 @@
 import subprocess, sys
 import time
 from tkinter import *
+from PIL import Image, ImageTk
 
 # gui
 root=Tk()
-root.minsize(400, 200)
+root.minsize(1280, 720)
 root.title('Touchpad ')
+win1_img = ImageTk.PhotoImage(Image.open('./win1.jpg'))
+win1_loc_x = 0
+win1_loc_y = 0
+win1_last_loc_x = 0
+#c_w_diff_x = 0
+#c_w_diff_y = 0
+win1 = Label(root, image=win1_img)
+win1.pack()
+win1.image=win1_img
+win1.place(x=0, y=0)
+win2_img = ImageTk.PhotoImage(Image.open('./win2.jpg'))
+win2_loc_x = 1280
+win2_loc_y = 0
+#c_w_diff_x = 0
+#c_w_diff_y = 0
+win2 = Label(root, image=win2_img)
+win2.pack()
+win2.image=win2_img
+win2.place(x=1280, y=0)
+initial_4_f_drag_x_is_get = 0
+initial_4_f_drag_y_is_get = 0
 x_text = StringVar()
 Label(root, textvariable=x_text).pack()
 x_text.set("X:           ")
@@ -15,15 +37,16 @@ y_text.set("Y:           ")
 f_text = StringVar()
 Label(root, textvariable=f_text).pack()
 f_text.set("Fingers:     ")
-c_last_loc_x = 200
-c_last_loc_y = 100
-c_loc_x = 200
-c_loc_y = 100
+c_last_loc_x = 640
+c_last_loc_y = 360
+c_loc_x = 640
+c_loc_y = 360
 click = StringVar()
 cursor=Label(root, textvariable=click)
 click.set("X")
 cursor.pack()
 cursor.place(x=c_last_loc_x, y=c_last_loc_y)
+
 # command to get data from trackpad
 cmd = "evtest /dev/input/event9"
 
@@ -52,6 +75,7 @@ while True:
         outstr = str(out)
         merge = merge + outstr
         
+        '''
         # finger count
         if len(fingers) > 40:
             fingers[:1] = []
@@ -85,7 +109,8 @@ while True:
             finger_count = 1
         
         pos = -1
-    
+        '''
+
     merge = merge + "End"
     
     # getting values from merge string
@@ -128,7 +153,40 @@ while True:
     
         pos = -1
         
-        # Button detection
+        # Finger count (new)
+        if len(fingers) > 10:
+            fingers[:1] = []
+
+        if "ABS_MT_SLOT" in merge:
+            check_finger_4 = merge.find("(ABS_MT_SLOT), value 3")
+            check_finger_3 = merge.find("(ABS_MT_SLOT), value 2")
+            check_finger_2 = merge.find("(ABS_MT_SLOT), value 1")
+            if check_finger_4 != -1:
+                fingers.append(4)
+            else:
+                if check_finger_3 != -1:
+                    fingers.append(3)
+                else:
+                    if check_finger_2 != -1:
+                        fingers.append(2)
+        else:
+            fingers.append(1)
+        
+        if 4 in fingers:
+            #print("4 fingers")
+            finger_count = 4
+        elif 3 in fingers:
+            #print("3 fingers")
+            finger_count = 3
+        elif 2 in fingers:
+            #print("2 fingers")
+            finger_count = 2
+        else:
+            #print("1 fingers")
+            finger_count = 1
+
+
+        # Click detection
         pos = merge.find("BTN_LEFT")
         posx = merge.find("'", pos)
         if pos != -1:
@@ -169,8 +227,65 @@ while True:
             fingers = []
             c_last_loc_x = c_loc_x
             c_last_loc_y = c_loc_y
+            initial_4_f_drag_x_is_get = 0
+            if win1_last_loc_x > - 640:
+                win1_last_loc_x = 0
+                win1.place(x=0 , y=0)
+                win2.place(x=1280 , y=0)
+            elif win1_last_loc_x <= -640:
+                win1_last_loc_x = -1280
+                win1.place(x=-1280 , y=0)
+                win2.place(x=0 , y=0)
         
         
+        '''
+           if 0 > win1_last_loc_x > - 640:
+                for smooth_x in range(win1_last_loc_x, 0):
+                    win1_last_loc_x = smooth_x
+                    win1.place(x=smooth_x , y=0)
+                    win2.place(x=1280 + smooth_x , y=0)
+                    smooth_x += 1
+                    print(smooth_x)
+                    time.sleep(0.0001)
+                    root.update()
+            elif win1_last_loc_x <= -640:
+                for smooth_x in range(-1280 , win1_last_loc_x):
+                    win1_last_loc_x = smooth_x
+                    win1.place(x=smooth_x , y=0)
+                    win2.place(x=1280 + smooth_x , y=0)
+                    smooth_x += 1
+                    print(smooth_x)
+                    time.sleep(0.0001)
+                    root.update()
+            '''   
+
+        '''
+        # Dragging
+        if is_pressing_int == 1:
+            if win_loc_x < c_loc_x < (win_loc_x + 766) and win_loc_y < c_loc_y < (win_loc_y + 423):
+                print(win_loc_x)
+                c_w_diff_x = c_loc_x - win_loc_x
+                c_w_diff_y = c_loc_y - win_loc_y
+                win_loc_x = c_loc_x - c_w_diff_x
+                win.place(x=win_loc_x , y=c_loc_y - c_w_diff_y)
+                win.image=ph
+        '''
+
+        # Switching windows
+        if finger_count == 3:
+            if initial_4_f_drag_x_is_get == 0:
+                f_swipe_start_x = c_loc_x - win1_last_loc_x
+                f_swipe_start_y = c_loc_y
+                initial_4_f_drag_x_is_get = 1
+            win1_loc_x = c_loc_x
+            win1_last_loc_x = c_loc_x - f_swipe_start_x
+            win1.place(x= win1_last_loc_x , y=0)
+            win2.place(x=1280 + win1_last_loc_x , y=0)
+
+
+        # When default finger released from trackpad it causes jump to mitigate it i will change reference when finger number is decreased
+
+
     #print(merge)
     merge = "Start"
     root.update()            
